@@ -1,0 +1,99 @@
+<html>
+<head><title>{{ home }} VS {{ guest }} 欧赔走势</title></head>
+
+<script type="text/javascript" src='{{ static_url("tools/jquery.min.js") }}'></script>
+<script type="text/javascript" src='{{ static_url("tools/helper.js") }}'></script>
+<script language="javascript">
+String.format = function () {
+    if (arguments.length == 0) {
+        return null;
+    }
+    var str = arguments[0];
+    for (var i = 1; i < arguments.length; i++) {
+        var re = new RegExp('\\{' + (i - 1) + '\\}', 'gm');
+        str = str.replace(re, arguments[i]);
+    }
+    return str;
+}
+
+css = {
+    "float":"left",
+    "margin":"0 0 0 10px",
+};
+function showTooltip(cp){
+    var tipsobj = $("<div></div>");
+    var h = [];
+    h.push('<table width="100%" cellspacing="0" cellpadding="0" bgcolor="#CEABCD" border="1px">');
+    h.push('<tr>');
+    h.push('<th align="center">' + cp.company + '</th>');
+    h.push('<th align="center">主</th>');
+    h.push('<th align="center">和</th>');
+    h.push('<th align="center">负</th>');
+    h.push('<th align="center">返还</th>');
+    h.push('</tr>');
+    m = cp.euro;
+    for(var i = 0;i<m.length;i++){
+        b = m[i];
+        b1 = (i < m.length - 1)?m[i+1]:false;
+        h.push('<tr>');
+        h.push('<td bgcolor="#efefef">' + b[0] + '</td>');
+        h.push('<td bgcolor="#efefef">' + gTag(b,b1,1) +'</td>');
+        h.push('<td bgcolor="#efefef">' + gTag(b,b1,2) +'</td>');
+        h.push('<td bgcolor="#efefef">' + gTag(b,b1,3) +'</td>');
+        h.push('<td bgcolor="#efefef">' + b[4] + '</td>');
+        h.push('</tr>');
+    }
+    h.push('</table>');
+    tipsobj.html(h.join(''));
+    tipsobj.css(css);
+    $("body").append(tipsobj);
+}
+
+function gTag(b,b1,i){
+    if (b1){
+        if (parseFloat(b[i])<parseFloat(b1[i]))return green(b[i]);
+        if (parseFloat(b[i])>parseFloat(b1[i]))return red(b[i]);
+    }
+    return b[i];
+}
+
+function green(tag){
+    return '<font color="green">' + tag + '</font>';
+}
+
+function red(tag){
+    return '<font color="red">' + tag + '</font>';
+}
+
+function drawEuroList(obj,i) {
+    showTooltip(obj);
+}
+</script>
+
+<body>
+
+<script>
+    var oddslist = [];
+</script>
+
+{% for r in oddslist %}
+<script>
+var a = {};
+a.home = '{{ home }}';
+a.away = '{{ guest }}';
+a.company = '{{ r.company }}';
+a.euro = [];
+{% for item in r.euro %} a.euro.push(['{{ item[0] }}','{{ item[1] }}','{{ item[2] }}','{{ item[3] }}','{{ item[4] }}']); {% end %}
+oddslist.push(a);
+</script>
+{% end %}
+
+<script language="javascript">
+for (var i = 0;i<oddslist.length;i++){
+    cp = oddslist[i];
+    drawEuroList(cp,i);
+}
+</script>
+
+</body>
+</html>

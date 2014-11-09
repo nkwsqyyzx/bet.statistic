@@ -1,0 +1,298 @@
+<html>
+<head><title>{{ home }} VS {{ guest }} 亚盘走势</title></head>
+
+<script type="text/javascript" src='{{ static_url("tools/jquery.min.js") }}'></script>
+<script type="text/javascript" src='{{ static_url("amline/swfobject.js") }}'></script>
+<script type="text/javascript" src='{{ static_url("tools/helper.js") }}'></script>
+<script language="javascript">
+function toggle(id) {
+    var ele = document.getElementById(id);
+    if (ele.style.display == "block") {
+        ele.style.display = "none";
+    } else {
+        ele.style.display = "block";
+    }
+}
+
+function formatData(obj) {
+    r = "<chart><series>{0}</series><graphs><graph gid='1' visible_in_legend='false'>{1}</graph></graphs></chart>";
+
+    sv = '';
+    gv = '';
+    as = [];
+    for (var i = obj.asian.length - 1; i >= 0; i--) {
+        as.push(obj.asian[i]);
+    }
+    lp = '';
+    for (var i = 0; i < as.length; i++) {
+        if (i == 0) {
+            sv = String.format("<value xid='0' event_start='event0' event_color='#FFFF00'>{0}</value>", as[i][0]);
+            gv = String.format("<value xid='0' description='{1}' bullet_color='#009900' bullet_size='8'>{0}</value>", as[i][1], as[i][2]);
+            lp = as[i][2];
+            continue;
+        }
+
+        sv = sv + String.format("<value xid='{0}' event_color='#FFFF00'>{1}</value>", i, as[i][0]);
+        if (lp != '' && lp != as[i][2]) {
+            gv = gv + String.format("<value xid='{0}' bullet_color='#009900' bullet_size='8' description='{1}'>{2}</value>", i, as[i][2], as[i][1]);
+        } else {
+            gv = gv + String.format("<value xid='{0}' description='{1}'>{2}</value>", i, as[i][2], as[i][1]);
+        }
+        lp = as[i][2];
+    }
+    return String.format(r, sv, gv);
+}
+
+function formatSetting(obj) {
+    r = "<settings><decimals_separator>.</decimals_separator><labels><label><x>40</x><y>20</y><width>955</width><align>left</align><text_color>#FA7000</text_color><text_size>15</text_size><text><![CDATA[<b><b>{0}: {1} VS {2} 赔率变化图</b></b>]]></text></label></labels><graphs><graph gid='1'><bullet>round</bullet><bullet_size>5</bullet_size></graph></graphs></settings>";
+    return String.format(r, obj.company, obj.home, obj.away);
+}
+
+function drawFlash(id,obj,i) {
+    id = String.format("swf_{0}",id);
+    try {
+        var so = new SWFObject('{{ static_url("amline/amline.swf") }}', "amline", "940", "400", "8", "#FFFFFF");
+        so.addVariable("path", '{{ static_url("amline/") }}');
+        so.addVariable("chart_data", encodeURIComponent(formatData(obj)));
+        so.addVariable("chart_settings", encodeURIComponent(formatSetting(obj)));
+        so.write(id);
+    } catch (e) {
+        alert(e);
+    }
+}
+
+var tipsobj;
+function showTooltip(e,i,o,k){
+    if (!tipsobj) {
+        tipsobj = $("<div></div>");
+        $("body").append(tipsobj);
+    }
+    else {
+        tipsobj.show();
+    }
+    var coordinates = { "x": 0, "y": 0 };
+    if (e.pageX || e.pageY) {
+        coordinates.x = e.pageX;
+        coordinates.y = e.pageY;
+    }
+    else {
+        coordinates.x = e.clientX + document.body.scrollLeft - document.body.clientLeft;
+        coordinates.y = e.clientY + document.documentElement.scrollTop;
+    }
+    coordinates.x += 20;
+    css = {
+        "position": "absolute",
+        "z-index": "999",
+        "left": coordinates.x + "px",
+        "top": coordinates.y + "px"
+    };
+    cp = oddslist[i];
+
+    ct = cp.asian[o][0];
+    st = timeByOffset(ct,-120*60);
+    et = timeByOffset(ct,120*60);
+
+    var h = [];
+    h.push('<table width="100%" cellspacing="0" cellpadding="0" bgcolor="#CEABCD" border="1px">');
+    h.push('<tr height="20px">');
+    h.push('<th bgcolor="#CEFFCD" align="center">时间</th>');
+    h.push('<th bgcolor="#CEFFCD" align="center">主</th>');
+    h.push('<th bgcolor="#CEFFCD" align="center">和</th>');
+    h.push('<th bgcolor="#CEFFCD" align="center">负</th>');
+    h.push('<th bgcolor="#CEFFCD" align="center">返还</th>');
+    h.push('</tr>');
+    var m = {};
+    if (k){
+        m = euros(cp,ct,st,et);
+    }
+    else{
+        m.m = cp.euro;
+    }
+    for(var i = 0;i<m.m.length;i++){
+        b = m.m[i];
+        b1 = (i < m.m.length - 1)?m.m[i+1]:false;
+        h.push('<tr height="20px">');
+        h.push('<td align="center" bgcolor="#efefef">' + b[0] + '</td>');
+        h.push('<td align="center" bgcolor="#efefef">' + gTag(b,b1,1) +'</td>');
+        h.push('<td align="center" bgcolor="#efefef">' + gTag(b,b1,2) +'</td>');
+        h.push('<td align="center" bgcolor="#efefef">' + gTag(b,b1,3) +'</td>');
+        h.push('<td align="center" bgcolor="#efefef">' + b[4] + '</td>');
+        h.push('</tr>');
+    }
+    h.push('</table>');
+    tipsobj.html(h.join(''));
+    tipsobj.css(css);
+    if (window.event) { e.cancelBubble = true; }
+    return false;
+}
+
+function gTag(b,b1,i){
+    if (b1){
+        if (parseFloat(b[i])<parseFloat(b1[i]))return green(b[i]);
+        if (parseFloat(b[i])>parseFloat(b1[i]))return red(b[i]);
+    }
+    return b[i];
+}
+
+function green(tag){
+    return '<font color="green">' + tag + '</font>';
+}
+
+function red(tag){
+    return '<font color="red">' + tag + '</font>';
+}
+
+function euros(obj,ct,st,et){
+    var m = [];
+    ist = -1;
+    var reverse = [];
+    for(var i=0;i<obj.euro.length;i++){
+        reverse.splice(0,0,obj.euro[i]);
+    }
+    for(var i=0;i<reverse.length;i++){
+        a = reverse[i];
+        if (a[0] < ct){
+            continue;
+        }
+        ist = i;
+        break;
+    }
+
+
+    max = 6;
+    jst = (ist >= 2)?(ist - 2):0;
+    count = (reverse.length - 1 - jst)>max?max:(reverse.length -1 - jst);
+    jet = jst + count;
+
+    if (count < max){
+        fjst = jst - max + count;
+        jst = (fjst >=0 )?fjst:0;
+        count = (reverse.length - jst -1 > max)?max:(reverse.length - jst -1);
+    }
+    if (ist < 0){
+        jst = (reverse.length > max)?(reverse.length - max):0;
+        count = (reverse.length > max)?max:reverse.length;
+    }
+
+    for(i = jst;i<jst+count && i < reverse.length;i++){
+        m.splice(0,0,reverse[i]);
+    }
+
+    return {"ist":ist,"m":m};
+}
+
+function hidetips(obj) {
+    if (window.event) {
+        e = window.event;
+        e.cancelBubble = true;
+    }
+    tipsobj.hide();
+    return false;
+}
+
+function drawTbody(id,obj,index) {
+    selector = $("#tbody_" + id);
+    tbHtml = '';
+    htmlFormat = '<tr height="20px"><td align="center">{0}</td><td align="center" onmouseover="showTooltip(event,'+index+',{4},1)">{1}</td><td align="center">{2}</td><td align="center"{3}</td></tr>';
+    pa1 = 0;
+    a1 = '';
+    for (var i = 0;i<obj.asian.length;i++){
+        a = obj.asian[i];
+        a1 = a[1];
+        if (i < obj.asian.length - 1){
+            pa1 = parseFloat(obj.asian[i+1][1]);
+            if (parseFloat(a[1]) < pa1){
+                a1 = '<font color="green"><b>' + a1 + "</b></font>";
+            }
+            else{
+                a1 = '<font color="red"><b>' + a1 + "</b></font>";
+            }
+        }
+        else{
+            a1 = '<b>' + a1 + "</b>";
+            pa1 = 0;
+        }
+        line = String.format(htmlFormat,a[0],a1,a[2],' onmouseover="showTooltip(event,'+index+','+i+',0)"><b>' + a[3] + '</b>',i);
+        tbHtml = tbHtml + line;
+    }
+    selector.html(tbHtml);
+}
+
+function draw(id, obj,i) {
+    drawFlash(id,obj,i);
+    drawTbody(id,obj,i);
+}
+</script>
+
+<style type="text/css">
+.wrap {
+    float:left;
+    width:100%;
+    margin:0 auto;
+}
+.left_col {
+    float:left;
+    width:30%;
+}
+.right_col {
+    float:right;
+    width:70%;
+}
+</style>
+
+<body>
+
+<script>
+    var oddslist = [];
+</script>
+
+{% for r in oddslist %}
+{% if r.asian %}
+<script>
+var a = {};
+a.home = '{{ home }}';
+a.away = '{{ guest }}';
+a.company = '{{ r.company }}';
+a.asian = [];
+{% for item in r.asian %} a.asian.push(['{{ item[0] }}','{{ item[1] }}','{{ item[2] }}','{{ item[3] }}']); {% end %}
+a.euro = [];
+{% for item in r.euro %} a.euro.push(['{{ item[0] }}','{{ item[1] }}','{{ item[2] }}','{{ item[3] }}','{{ item[4] }}']); {% end %}
+oddslist.push(a);
+</script>
+<ul>
+    <li>{{ home }} vs {{ guest }} <a href='javascript:toggle("{{ r.company }}")'>{{ r.company }}</a>  走势</li>
+</ul>
+<div id='{{ r.company }}' style="display: block" class='wrap'>
+    <div id='tb_{{ r.company }}' class='left_col'>
+        <a width='100px' href='javascript:toggle("table_div_id_{{ r.company }}")'>切换</a>
+        <div id='table_div_id_{{ r.company }}' style='display: block'>
+            <div style="overflow: auto; max-height: 300px;">
+                <table cellspacing="0" cellpadding="0" border='1px'>
+                    <tr>
+                        <th>时间</th>
+                        <th>{{ home }}</th>
+                        <th>盘口</th>
+                        <th>{{ guest }}</th>
+                    </tr>
+                    <tbody id='tbody_{{ r.company }}'>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class='right_col'>
+        <div id='swf_{{ r.company }}'></div>
+    </div>
+</div>
+{% end %}
+{% end %}
+
+<script language="javascript">
+for (var i = 0;i<oddslist.length;i++){
+    cp = oddslist[i];
+    draw(cp.company,cp,i);
+}
+</script>
+
+</body>
+</html>
