@@ -24,12 +24,19 @@ from handlers.odds.handlers import OddsDetail
 from handlers.odds.handlers import OddsHistory
 from handlers.odds.handlers import OddsNext
 
+from handlers.statistics.handlers import StatisticsHome
+from handlers.statistics.handlers import StatisticsList
+from handlers.statistics.handlers import StatisticsDetail
+
 handlers = [
     (r"/", HomeHandler),
     (r"/odds/home/*", OddsHome),
     (r"/odds/detail/", OddsDetail),
     (r"/odds/history/", OddsHistory),
     (r"/odds/next/", OddsNext),
+    (r"/statistics/home/*", StatisticsHome),
+    (r"/statistics/list/", StatisticsList),
+    (r"/statistics/detail/", StatisticsDetail),
 ]
 
 settings = dict(
