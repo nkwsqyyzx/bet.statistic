@@ -117,7 +117,7 @@ class WhoScoredProvider():
         except Exception as e:
             print(match_id, e)
 
-        return d
+        return eval(d)
 
     def __queryStatistics(self, clubId):
         if not self.connection.query('show tables like "t_team_match_{0}"'.format(clubId)):
@@ -136,4 +136,4 @@ class WhoScoredProvider():
         for t in awayData:
             if not t[1]:
                 t[1] = self.__fetchOriginalData(t[0])
-        return [homeData, awayData]
+        return [str(homeData), str(awayData)]

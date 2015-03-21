@@ -53,7 +53,7 @@ class StatisticsDetail(DBHandler):
 
     def onResponse(self, home, guest, statistics):
         if statistics:
-            self.render('statistics/against_stat.html', home=home[0], away=guest[0], homeJS=statistics[0][1], awayJS=statistics[1][1])
+            self.render('statistics/against_stat.html', home=home[0], away=guest[0], homeJS=statistics[0], awayJS=statistics[1])
         else:
             self.set_status(404)
             self.finish()
