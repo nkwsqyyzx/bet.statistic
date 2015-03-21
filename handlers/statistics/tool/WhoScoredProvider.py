@@ -12,13 +12,15 @@ class WhoScoredProvider():
     global cache
     cache = HtmlCache('/temp/whoscored/')
     timeout = 365 * 24 * 60 * 60
+    canResolve = False
+    whoscoredRoot = 'http://www.whoscored.com' if canResolve else 'http://94.236.49.126/'
 
     def __init__(self, connection):
         self.connection = connection
 
     def GetMatchesLink(self, leagueURL='Regions/252/Tournaments/7/England-Championship'):
         # 从每个联赛中获取下一轮比赛对阵链接
-        url = 'http://www.whoscored.com/{0}'.format(leagueURL)
+        url = '{1}{0}'.format(leagueURL, whoscoredRoot)
         html, cached = cache.getContentWithAgent(url=url, encoding='gbk', timeout=24*60*60)
         js = html.split('calendar.parameter()), ')[1].split(']);')[0].replace('\r\n', '')
         js = 'var matches = {0}];'.format(js)
@@ -38,7 +40,7 @@ class WhoScoredProvider():
     def __getMatchesByClub(self, clubId=15):
         # 从球队链接中获取其所有比赛号
         # => list of (matchid, home, away)
-        link = 'http://www.whoscored.com/Teams/{0}/Fixtures/'.format(clubId)
+        link = '{1}Teams/{0}/Fixtures/'.format(clubId, whoscoredRoot)
         html, cached = cache.getContentWithAgent(url=link, encoding='gbk', timeout=3*24*60*60)
         conn = self.connection
         try:
@@ -96,7 +98,7 @@ class WhoScoredProvider():
             self.connection.execute(sql)
 
     def __fetchOriginalData(self, matchid='758062'):
-        url = 'http://www.whoscored.com/Matches/{0}/MatchReport'.format(matchid)
+        url = '{1}Matches/{0}/MatchReport'.format(matchid, whoscoredRoot)
         html, cached = cache.getContentWithAgent(url=url, encoding='gbk', timeout=30*24*60*60)
         d = None
         try:
