@@ -1,20 +1,23 @@
-import time
-from datetime import datetime, timedelta
-
-import tornado.web
-
-from handlers.misc import DBHandler
-from handlers.misc import BaseHandler
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
 
 import sys
 from os.path import dirname
+
+import tornado.web
+
+from ..misc import BaseHandler
+from ..misc import DBHandler
+
 sys.path.append(dirname(__file__))
 
-from handlers.statistics.tool.WhoScoredProvider import WhoScoredProvider
+from ..statistics.tool.WhoScoredProvider import WhoScoredProvider
+
 
 class StatisticsHome(BaseHandler):
     def get(self):
         self.render("statistics/home.html")
+
 
 class StatisticsList(BaseHandler):
     @tornado.web.asynchronous
@@ -33,6 +36,7 @@ class StatisticsList(BaseHandler):
         else:
             self.set_status(404)
             self.finish()
+
 
 class StatisticsDetail(DBHandler):
     @tornado.web.asynchronous
@@ -53,7 +57,8 @@ class StatisticsDetail(DBHandler):
 
     def onResponse(self, home, guest, statistics):
         if statistics:
-            self.render('statistics/against_stat.html', home=home[0], away=guest[0], homeJS=statistics[0], awayJS=statistics[1])
+            self.render('statistics/against_stat.html', home=home[0], away=guest[0], homeJS=statistics[0],
+                        awayJS=statistics[1])
         else:
             self.set_status(404)
             self.finish()

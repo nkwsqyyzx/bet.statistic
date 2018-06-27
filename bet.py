@@ -6,7 +6,7 @@ import tornado.web
 
 from tornado.options import define, options
 
-define("port", default=80, help="run on the given port", type=int)
+define("port", default=8080, help="run on the given port", type=int)
 define("host", default="127.0.0.1:3306", help="blog database host")
 define("database", default="blog", help="blog database name")
 define("user", default="blog", help="blog database user")

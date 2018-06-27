@@ -2,8 +2,8 @@
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 
-from tool.MatchOdds import MatchOdds, Odds
-from handlers.misc import HtmlCache
+from ..tool.MatchOdds import MatchOdds, Odds
+from ...misc import HtmlCache
 
 cache = HtmlCache('/temp/nowscore/')
 allCompanies = [

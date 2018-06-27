@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
 import time
 from datetime import datetime, timedelta
 
 import tornado.web
 
-from handlers.misc import BaseHandler
+from ..misc import BaseHandler
 
 import sys
 from os.path import dirname

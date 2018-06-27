@@ -1,11 +1,10 @@
-import codecs
 import hashlib
 import os.path
 import time
-import urllib.request
 
-import torndb
+import requests
 import tornado.web
+
 
 class Application(tornado.web.Application):
     def __init__(self, handlers, settings, options):
@@ -13,8 +12,8 @@ class Application(tornado.web.Application):
         user = options.user
         password = options.password
         database = options.database
-        self.db = torndb.Connection(host=host, user=user, password=password, database=database)
         tornado.web.Application.__init__(self, handlers, **settings)
+
 
 class HtmlCache:
     def __init__(self, basepath):
@@ -30,7 +29,7 @@ class HtmlCache:
             outofdate = time.time() - os.path.getmtime(fpath) > timeout
             if outofdate:
                 return html, fpath
-            with codecs.open(fpath, 'r', encoding) as f:
+            with open(fpath, 'r', encoding=encoding) as f:
                 try:
                     html = ''.join(f.readlines())
                 except UnicodeDecodeError:
@@ -43,50 +42,47 @@ class HtmlCache:
             if html:
                 return html, True
             else:
-                html = urllib.request.urlopen(url).read().decode(encoding, errors='ignore')
+                html = requests.get(url).decode(encoding, errors='ignore')
                 if not os.path.exists(self.basepath):
                     os.makedirs(self.basepath)
-                with codecs.open(fpath, 'w', encoding) as outfile:
+                with open(fpath, 'w', encoding=encoding) as outfile:
                     outfile.write(html)
                 return html, False
         else:
-            html = urllib.request.urlopen(url).read().decode(encoding)
+            html = requests.get(url).decode(encoding)
             return html, False
 
-    def getContentWithAgent(self, url, encoding='utf-8', cache=1, timeout=30 * 60, userAgent='Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'):
+    def getContentWithAgent(self, url, encoding='utf-8', cache=1, timeout=30 * 60,
+                            userAgent='Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'):
         if cache:
             html, fpath = self.getCachedHtml(url, encoding, timeout)
 
             if html:
                 return html, True
-            else:
-                request = urllib.request.Request(url)
-                request.add_header('User-Agent', userAgent)
-                html = ''
-                try:
-                    r = urllib.request.urlopen(request)
-                    html = r.read().decode(encoding, errors='ignore')
-                    if not os.path.exists(self.basepath):
-                        os.makedirs(self.basepath)
-                    with codecs.open(fpath, 'w', encoding) as outfile:
-                        outfile.write(html)
-                except Exception as e:
-                    print(url, e)
-                return html, False
-        else:
-            request = urllib.request.Request(url)
-            request.add_header('User-Agent', userAgent)
-            r = urllib.request.urlopen(request)
-            html = r.read().decode(encoding, errors='ignore')
-            return html, False
+        session = requests.Session()
+        request = requests.Request(url=url, headers={'User-Agent': userAgent})
+        try:
+            r = request.prepare()
+            r = session.send(r)
+            html = r.content.decode(encoding, errors='ignore')
+            if not os.path.exists(self.basepath):
+                os.makedirs(self.basepath)
+            with open(fpath, 'w', encoding=encoding) as outfile:
+                outfile.write(html)
+        except Exception as e:
+            print(url, e)
+        return '', False
+
 
 class BaseHandler(tornado.web.RequestHandler):
     pass
+
 
 class DBHandler(BaseHandler):
     @property
     def db(self):
         return self.application.db
+
 
 class HomeHandler(tornado.web.RequestHandler):
     def get(self):
